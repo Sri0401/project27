@@ -1,0 +1,80 @@
+# Full stack: PostgreSQL + MongoDB -> Java ingestor (runs once) -> FastAPI -> Nginx (web + reverse proxy).
+# Usage: cp .env.example .env && docker compose up -d --build   then open http://localhost:8080
+name: urbanpulse
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: urbanpulse
+      POSTGRES_USER: urbanpulse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U urbanpulse -d urbanpulse"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7.0
+    # Keep the cache small so the whole stack fits on a 1 GB Azure B1s VM.
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: urbanpulse
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?set MONGO_PASSWORD in .env}
+    volumes:
+      - mongodata:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  ingestor:
+    build: ./ingestor
+    command: ["/data/suburbs_sample.csv"]
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/urbanpulse
+      DB_USER: urbanpulse
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JAVA_TOOL_OPTIONS: -Xmx128m
+    volumes:
+      - ./data:/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: ./api
+    environment:
+      DATA_BACKEND: postgres
+      DATABASE_URL: postgresql://urbanpulse:${POSTGRES_PASSWORD}@postgres:5432/urbanpulse
+      MONGO_URL: mongodb://urbanpulse:${MONGO_PASSWORD}@mongo:27017/?authSource=admin
+      API_KEY: ${API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      ingestor:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+# The databases publish no ports. Only Nginx can be reached from outside.
+volumes:
+  pgdata:
+  mongodata:

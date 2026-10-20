@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UrbanPulse</title>
+  <meta name="description" content="Explore suburb liveability indicators on a map.">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>UrbanPulse</h1>
+      <p class="tagline">Suburb liveability explorer &middot; sample data, not official statistics</p>
+    </div>
+    <a class="docs-link" href="/api/docs">API docs</a>
+  </header>
+
+  <main class="layout">
+    <section class="panel filters" aria-label="Filters">
+      <label>Min walk score <output id="walkValue">0</output>
+        <input id="minWalk" type="range" min="0" max="100" step="5" value="0">
+      </label>
+      <label>Max weekly rent (AUD) <output id="rentValue">any</output>
+        <input id="maxRent" type="range" min="350" max="650" step="10" value="650">
+      </label>
+      <label>Sort by
+        <select id="sortBy">
+          <option value="liveability_score">Liveability score</option>
+          <option value="walk_score">Walk score</option>
+          <option value="green_space_pct">Green space</option>
+          <option value="median_weekly_rent">Rent</option>
+          <option value="population">Population</option>
+          <option value="name">Name</option>
+        </select>
+      </label>
+      <p id="status" class="status" role="status"></p>
+    </section>
+
+    <section class="panel map-panel" aria-label="Map">
+      <div id="map"></div>
+      <div class="legend"><span>Lower score</span><span class="ramp"></span><span>Higher score</span></div>
+    </section>
+
+    <section class="panel chart-panel" aria-label="Top suburbs chart">
+      <h2>Top 10 by liveability</h2>
+      <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    </section>
+
+    <section class="panel table-panel" aria-label="Suburb table">
+      <h2>Suburbs <span id="count" class="muted"></span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>Suburb</th><th>Score</th><th>Walk</th><th>Green %</th><th>PT stops</th><th>Rent</th><th>Population</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel datasets-panel" aria-label="Open dataset catalogue">
+      <h2>Open dataset catalogue</h2>
+      <ul id="datasets" class="datasets"></ul>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span id="ingestion"></span>
+    <span>Map data &copy; OpenStreetMap contributors</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
