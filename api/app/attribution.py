@@ -7,12 +7,20 @@ export, so the credit and licence link go wherever the data goes.
 LICENCE_NAME = "CC BY 4.0"
 LICENCE_URL = "https://creativecommons.org/licenses/by/4.0/"
 
+# Wording follows the ABS DataPack licence file: "Based on ABS data" for derived material, the
+# permission acknowledgement, title, publication and access date, and no ABS credit for our own figures.
 ATTRIBUTION = (
-    "Derived from Australian Bureau of Statistics data (2021 Census, ASGS Edition 3) and "
-    "Department of Transport and Planning (Victoria) data (GTFS Schedule; Victoria Road Crash Data, "
-    "obtained via the Kaggle dataset nationaldigitalau/vic-road-crashes), licensed under CC BY 4.0 "
-    f"({LICENCE_URL}). Changes were made: data joined, aggregated to SA2 and filtered. "
-    "Not endorsed by the ABS or DTP."
+    "Based on ABS data: Australian Bureau of Statistics, 2021 Census of Population and Housing, "
+    "General Community Profile DataPack (Release 2, files dated 16 January 2023), SA2, Victoria; "
+    "and Australian Statistical Geography Standard (ASGS) Edition 3, July 2021 - June 2026; both "
+    "accessed 20 October 2026 (https://www.abs.gov.au). ABS data used with permission from the "
+    "Australian Bureau of Statistics. Also based on Department of Transport and Planning "
+    "(Victoria) data: GTFS Schedule, accessed 20 October 2026; and Victoria Road Crash Data, "
+    "accessed 12 October 2026, obtained via the Kaggle dataset "
+    f"nationaldigitalau/vic-road-crashes. All licensed under CC BY 4.0 ({LICENCE_URL}). Changes "
+    "were made: data joined, aggregated to SA2 and filtered. Derived indicators and the "
+    "liveability score are UrbanPulse calculations, not ABS or DTP statistics. Not endorsed by "
+    "the ABS or DTP."
 )
 
 SOURCES = [

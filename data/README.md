@@ -25,7 +25,7 @@ python build_dataset.py        # about 300 MB of downloads the first time, then 
 
 CC BY 4.0 lets **anyone** copy, share and adapt the data, **including for commercial purposes**, as long as they:
 
-1. **Credit the source.** Name the ABS and the Department of Transport and Planning.
+1. **Credit the source.** Name the ABS and the Department of Transport and Planning. For changed ABS data, the ABS asks for "Based on ABS data" plus "ABS data used with permission from the Australian Bureau of Statistics".
 2. **Link to the licence**: https://creativecommons.org/licenses/by/4.0/
 3. **Say if changes were made.** This file is *derived*: it joins, aggregates and filters the source data, so it says so.
 4. **Don't suggest endorsement.** UrbanPulse is not affiliated with or endorsed by the ABS or DTP.
@@ -34,7 +34,9 @@ These were checked against the ABS [copyright page](https://www.abs.gov.au/websi
 
 **Attribution used in this project** (dashboard footer, API, GeoJSON export, README and [NOTICE.md](../NOTICE.md)):
 
-> Derived from Australian Bureau of Statistics data (2021 Census, ASGS Edition 3) and Department of Transport and Planning (Victoria) data (GTFS Schedule; Victoria Road Crash Data, obtained via the Kaggle dataset nationaldigitalau/vic-road-crashes), licensed under CC BY 4.0. Changes were made: data joined, aggregated to SA2 and filtered. Not endorsed by the ABS or DTP.
+> Based on ABS data: Australian Bureau of Statistics, 2021 Census of Population and Housing, General Community Profile DataPack (Release 2, files dated 16 January 2023), SA2, Victoria; and Australian Statistical Geography Standard (ASGS) Edition 3, July 2021 - June 2026; both accessed 20 October 2026 (https://www.abs.gov.au). ABS data used with permission from the Australian Bureau of Statistics. Also based on Department of Transport and Planning (Victoria) data: GTFS Schedule, accessed 20 October 2026; and Victoria Road Crash Data, accessed 12 October 2026, obtained via the Kaggle dataset nationaldigitalau/vic-road-crashes. All licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Changes were made: data joined, aggregated to SA2 and filtered. Derived indicators and the liveability score are UrbanPulse calculations, not ABS or DTP statistics. Not endorsed by the ABS or DTP.
+
+The ABS wording ("Based on ABS data", the permission acknowledgement, and title, publication and access date) follows the licence file shipped inside the Census DataPack, `Readme/CreativeCommons_Licensing_readme.txt`.
 
 ### About the Kaggle source
 

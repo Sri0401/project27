@@ -140,6 +140,10 @@ def test_about_credits_both_publishers_and_links_the_licence(client):
     }
     assert all(s["licence_url"] == body["licence_url"] for s in body["sources"])
     assert any("kaggle.com" in s["url"] for s in body["sources"])
+    # Wording the ABS DataPack licence file asks for when ABS data has been changed or derived from.
+    assert body["attribution"].startswith("Based on ABS data")
+    assert "ABS data used with permission from the Australian Bureau of Statistics" in body["attribution"]
+    assert "not ABS or DTP statistics" in body["attribution"]
     assert "Kaggle" in body["attribution"]
 
 
