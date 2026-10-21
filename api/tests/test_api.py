@@ -144,6 +144,8 @@ def test_about_credits_both_publishers_and_links_the_licence(client):
     assert body["attribution"].startswith("Based on ABS data")
     assert "ABS data used with permission from the Australian Bureau of Statistics" in body["attribution"]
     assert "not ABS or DTP statistics" in body["attribution"]
+    # CC BY 4.0 s3(a)(1): credit the republisher and keep their modification notice.
+    assert "serialised and versioned by National Digital at publicdata.au" in body["attribution"]
     assert "Kaggle" in body["attribution"]
 
 

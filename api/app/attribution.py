@@ -15,12 +15,14 @@ ATTRIBUTION = (
     "and Australian Statistical Geography Standard (ASGS) Edition 3, July 2021 - June 2026; both "
     "accessed 20 October 2026 (https://www.abs.gov.au). ABS data used with permission from the "
     "Australian Bureau of Statistics. Also based on Department of Transport and Planning "
-    "(Victoria) data: GTFS Schedule, accessed 20 October 2026; and Victoria Road Crash Data, "
-    "accessed 12 October 2026, obtained via the Kaggle dataset "
-    f"nationaldigitalau/vic-road-crashes. All licensed under CC BY 4.0 ({LICENCE_URL}). Changes "
-    "were made: data joined, aggregated to SA2 and filtered. Derived indicators and the "
-    "liveability score are UrbanPulse calculations, not ABS or DTP statistics. Not endorsed by "
-    "the ABS or DTP."
+    "(Victoria) data: GTFS Schedule, accessed 20 October 2026; and Victoria Road Crash Data "
+    "(https://discover.data.vic.gov.au/dataset/victoria-road-crash-data), accessed 12 October "
+    "2026, serialised and versioned by National Digital at publicdata.au "
+    "(https://publicdata.au/d/vic-road-crashes/v/2026-10-12/), which added ABS area codes to each "
+    "crash, and obtained via the Kaggle dataset nationaldigitalau/vic-road-crashes. All licensed "
+    f"under CC BY 4.0 ({LICENCE_URL}). Changes were made: data joined, aggregated to SA2 and "
+    "filtered. Derived indicators and the liveability score are UrbanPulse calculations, not ABS "
+    "or DTP statistics. Not endorsed by the ABS or DTP."
 )
 
 SOURCES = [
@@ -47,7 +49,10 @@ SOURCES = [
     },
     {
         "publisher": "Department of Transport and Planning (Victoria)",
-        "dataset": "Victoria Road Crash Data 2019-2023 (Kaggle: nationaldigitalau/vic-road-crashes v3)",
+        "dataset": (
+            "Victoria Road Crash Data 2019-2023, serialised and versioned by National Digital at "
+            "publicdata.au (Kaggle: nationaldigitalau/vic-road-crashes v3)"
+        ),
         "url": "https://www.kaggle.com/datasets/nationaldigitalau/vic-road-crashes",
         "licence": LICENCE_NAME,
         "licence_url": LICENCE_URL,

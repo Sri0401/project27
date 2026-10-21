@@ -19,13 +19,31 @@ This wording follows the licence file shipped inside the DataPack (`Readme/Creat
 - [Victoria Road Crash Data](https://discover.data.vic.gov.au/dataset/victoria-road-crash-data): injury crashes reported to Victoria Police. Obtained through the Kaggle dataset [nationaldigitalau/vic-road-crashes](https://www.kaggle.com/datasets/nationaldigitalau/vic-road-crashes) (version 3, 12 October 2026), a [publicdata.au](https://publicdata.au/d/vic-road-crashes/) copy that adds ABS area codes to each crash.
 
 Source: Department of Transport and Planning (Victoria), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). GTFS Schedule accessed 20 October 2026.
+
+The crash data is a republication. As its licence requires, the republisher's credit and their change are kept:
+*Serialised and versioned by National Digital at publicdata.au, https://publicdata.au/d/vic-road-crashes/v/2026-10-12/*. National Digital added ABS area codes (including SA2) to each crash. They state that it is an independent republication not endorsed by the publisher.
 The publisher's requested credit for the crash data: *Department of Transport and Planning, Victoria, Victoria Road Crash Data, https://discover.data.vic.gov.au/dataset/victoria-road-crash-data, accessed 12 October 2026, licensed under CC BY 4.0.*
 
 ## Changes made
 
 The file [`data/melbourne_sa2_2021.csv`](data/melbourne_sa2_2021.csv) is **derived** from the sources above. Census tables were joined on SA2 code. Mesh Block land use was aggregated to a green-space share for each SA2. Transport stops were counted inside each SA2 boundary. Injury crashes from 2019 to 2023 were counted for each SA2 and averaged per year. Areas with fewer than 1,000 residents or unpublished medians were removed. Derived indicators and the liveability score are this project's own calculations. The full method is in [`data/README.md`](data/README.md).
 
-This project is not affiliated with or endorsed by the ABS or the Department of Transport and Planning.
+This project is not affiliated with or endorsed by the ABS, the Department of Transport and Planning, National Digital or Kaggle.
+
+## No warranties
+
+The source data is provided by its licensors "as is", without warranties of any kind, as set out in Section 5 of the [CC BY 4.0 licence](https://creativecommons.org/licenses/by/4.0/legalcode). The same applies to the derived data and calculations in this project.
+
+## How this meets the CC BY 4.0 conditions (Section 3(a))
+
+| Condition | Where it is met |
+|---|---|
+| Identify the creators and anyone they designate for credit | ABS, DTP, and National Digital (publicdata.au) for the republished crash data |
+| Keep copyright, licence and disclaimer notices supplied with the material | None besides the licence were supplied with the data. The licence is linked everywhere, and the warranty notice is above |
+| Link to the material | Every source is linked in the dashboard footer, `/api/about` and this file |
+| Say if it was modified, and keep earlier modification notes | Our changes are listed under *Changes made*. National Digital's change (adding area codes) is kept above |
+| State the licence with a link to it | Every attribution links to CC BY 4.0 |
+| Don't suggest endorsement | Stated above |
 
 ## Where the attribution appears
 
