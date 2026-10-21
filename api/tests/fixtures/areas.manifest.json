@@ -1,0 +1,26 @@
+{
+  "dataset": "areas",
+  "generated_at": "2026-10-20T08:00:00+00:00",
+  "pipeline_version": "1.2.0",
+  "output": {
+    "file": "areas.csv",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "rows": 5,
+    "columns": ["code", "name"]
+  },
+  "parameters": {"gccsa": "2GMEL", "min_population": 1000, "crash_years": [2019, 2023], "reference_year": 2021},
+  "sources": [
+    {
+      "name": "Victoria Road Crash Data",
+      "publisher": "Department of Transport and Planning (Victoria)",
+      "url": "https://www.kaggle.com/datasets/nationaldigitalau/vic-road-crashes",
+      "retrieved_via": "Kaggle API",
+      "version": 3,
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "records_used": 300,
+      "licence": "CC BY 4.0"
+    }
+  ],
+  "licence": {"name": "CC BY 4.0", "url": "https://creativecommons.org/licenses/by/4.0/"},
+  "skipped": [{"code": "A9", "name": "Airport", "reason": "population 12 is below 1000"}]
+}

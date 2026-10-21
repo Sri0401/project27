@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UrbanPulse</title>
-  <meta name="description" content="Explore suburb liveability indicators on a map.">
+  <meta name="description" content="Explore liveability indicators for Greater Melbourne neighbourhoods using open government data.">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="styles.css">
@@ -13,30 +13,46 @@
   <header class="topbar">
     <div>
       <h1>UrbanPulse</h1>
-      <p class="tagline">Suburb liveability explorer &middot; sample data, not official statistics</p>
+      <p class="tagline">Greater Melbourne liveability explorer &middot; ABS SA2 areas &middot; open government data</p>
     </div>
     <a class="docs-link" href="/api/docs">API docs</a>
   </header>
 
   <main class="layout">
     <section class="panel filters" aria-label="Filters">
-      <label>Min walk score <output id="walkValue">0</output>
-        <input id="minWalk" type="range" min="0" max="100" step="5" value="0">
+      <label>Search area
+        <input id="search" type="search" placeholder="e.g. Brunswick" maxlength="50" autocomplete="off">
+      </label>
+      <label>Min green space <output id="greenValue">0%</output>
+        <input id="minGreen" type="range" min="0" max="50" step="5" value="0">
       </label>
       <label>Max weekly rent (AUD) <output id="rentValue">any</output>
-        <input id="maxRent" type="range" min="350" max="650" step="10" value="650">
+        <input id="maxRent" type="range" min="250" max="800" step="25" value="800">
       </label>
       <label>Sort by
         <select id="sortBy">
           <option value="liveability_score">Liveability score</option>
-          <option value="walk_score">Walk score</option>
+          <option value="pt_stops_per_sqkm">Transport stops per km&sup2;</option>
           <option value="green_space_pct">Green space</option>
+          <option value="rent_to_income_pct">Rent as % of income</option>
           <option value="median_weekly_rent">Rent</option>
-          <option value="population">Population</option>
+          <option value="crashes_per_1000_residents">Road crashes per 1,000 residents</option>
+          <option value="population_density">Population density</option>
           <option value="name">Name</option>
         </select>
       </label>
       <p id="status" class="status" role="status"></p>
+      <details class="method">
+        <summary>How the score works</summary>
+        <p>Each area is ranked against all others on three indicators, then the percentile ranks are combined:</p>
+        <ul>
+          <li>30% public transport stops per km&sup2;</li>
+          <li>25% share of land that is parkland</li>
+          <li>30% rent as a share of household income (lower is better)</li>
+          <li>15% injury road crashes per 1,000 residents, 2019&ndash;2023 average (lower is better)</li>
+        </ul>
+        <p>A score of 80 means the area beats roughly 80% of areas on that weighted mix. It is a demonstration index, not an official measure.</p>
+      </details>
     </section>
 
     <section class="panel map-panel" aria-label="Map">
@@ -45,16 +61,16 @@
     </section>
 
     <section class="panel chart-panel" aria-label="Top suburbs chart">
-      <h2>Top 10 by liveability</h2>
+      <h2>Top 10 areas by liveability score</h2>
       <div class="chart-wrap"><canvas id="chart"></canvas></div>
     </section>
 
     <section class="panel table-panel" aria-label="Suburb table">
-      <h2>Suburbs <span id="count" class="muted"></span></h2>
+      <h2>Areas <span id="count" class="muted"></span></h2>
       <div class="table-scroll">
         <table>
           <thead>
-            <tr><th>Suburb</th><th>Score</th><th>Walk</th><th>Green %</th><th>PT stops</th><th>Rent</th><th>Population</th></tr>
+            <tr><th>Area (SA2)</th><th>Score</th><th>Stops/km&sup2;</th><th>Green %</th><th>Rent</th><th>Rent / income</th><th>Crashes / 1k</th><th>Population</th></tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
@@ -65,16 +81,33 @@
       <h2>Open dataset catalogue</h2>
       <ul id="datasets" class="datasets"></ul>
     </section>
+
+    <section class="panel provenance-panel" aria-label="Data provenance">
+      <h2>Data provenance</h2>
+      <div id="provenance" class="muted">Loading&hellip;</div>
+    </section>
   </main>
 
   <footer class="footer">
     <span id="ingestion"></span>
-    <span>Map data &copy; OpenStreetMap contributors</span>
+    <span>
+      Based on ABS data (<a href="https://www.abs.gov.au/census/find-census-data/datapacks" target="_blank" rel="noopener noreferrer">2021 Census DataPack</a>,
+      <a href="https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3" target="_blank" rel="noopener noreferrer">ASGS Edition 3</a>; accessed 20 Oct 2026).
+      ABS data used with permission from the <a href="https://www.abs.gov.au" target="_blank" rel="noopener noreferrer">Australian Bureau of Statistics</a>.
+      Also based on <a href="https://opendata.transport.vic.gov.au/dataset/gtfs-schedule" target="_blank" rel="noopener noreferrer">Department of Transport and Planning, Victoria</a>
+      data (GTFS; road crashes serialised and versioned by National Digital at
+      <a href="https://publicdata.au/d/vic-road-crashes/v/2026-10-12/" target="_blank" rel="noopener noreferrer">publicdata.au</a>, via
+      <a href="https://www.kaggle.com/datasets/nationaldigitalau/vic-road-crashes" target="_blank" rel="noopener noreferrer">Kaggle</a>).
+      Licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>.
+      Scores and derived indicators are UrbanPulse calculations, not ABS or DTP statistics; not endorsed by the ABS or DTP.
+      Map &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>.
+    </span>
   </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+          integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
   <script src="app.js"></script>
 </body>
 </html>

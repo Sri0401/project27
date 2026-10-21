@@ -1,0 +1,122 @@
+{
+  "dataset": "melbourne_sa2_2021",
+  "generated_at": "2026-10-20T07:59:58.865049+00:00",
+  "pipeline_version": "1.2.0",
+  "output": {
+    "file": "melbourne_sa2_2021.csv",
+    "sha256": "e0deef19f94bdc86aab2e201f33a745d53061732136050f00ad844f8811c5a2d",
+    "rows": 354,
+    "columns": [
+      "code",
+      "name",
+      "state",
+      "latitude",
+      "longitude",
+      "area_sqkm",
+      "population",
+      "median_age",
+      "median_weekly_rent",
+      "median_household_income",
+      "green_space_pct",
+      "pt_stops",
+      "road_crashes_per_year",
+      "reference_year"
+    ]
+  },
+  "parameters": {
+    "gccsa": "2GMEL",
+    "min_population": 1000,
+    "crash_years": [
+      2019,
+      2023
+    ],
+    "reference_year": 2021
+  },
+  "sources": [
+    {
+      "name": "ABS ASGS 2021 SA2 boundaries",
+      "publisher": "Australian Bureau of Statistics",
+      "url": "https://geo.abs.gov.au/arcgis/rest/services/ASGS2021/SA2/MapServer",
+      "retrieved_via": "ArcGIS REST API",
+      "records_used": 361,
+      "licence": "CC BY 4.0"
+    },
+    {
+      "name": "ABS ASGS 2021 Mesh Block land use (aggregated by SA2 on the server)",
+      "publisher": "Australian Bureau of Statistics",
+      "url": "https://geo.abs.gov.au/arcgis/rest/services/ASGS2021/MB/MapServer",
+      "retrieved_via": "ArcGIS REST API",
+      "records_used": 361,
+      "licence": "CC BY 4.0"
+    },
+    {
+      "name": "ABS 2021 Census GCP DataPack, SA2, Victoria (G01, G02)",
+      "publisher": "Australian Bureau of Statistics",
+      "url": "https://www.abs.gov.au/census/find-census-data/datapacks/download/2021_GCP_SA2_for_VIC_short-header.zip",
+      "retrieved_via": "file download",
+      "sha256": "a437c5fd3c3210c41052e9ff08ecbd54170c8476ef921b197cdcb1d6e9e5e0a3",
+      "records_used": 524,
+      "licence": "CC BY 4.0"
+    },
+    {
+      "name": "Victorian GTFS Schedule",
+      "publisher": "Department of Transport and Planning (Victoria)",
+      "url": "https://opendata.transport.vic.gov.au/dataset/3f4e292e-7f8a-4ffe-831f-1953be0fe448/resource/fb152201-859f-4882-9206-b768060b50ad/download/gtfs.zip",
+      "retrieved_via": "file download",
+      "sha256": "b1608bd39cb70ea2d1c33ac8299d889a9bd72a2c75cc59cbdccaf78d99656087",
+      "records_used": 21553,
+      "licence": "CC BY 4.0"
+    },
+    {
+      "name": "Victoria Road Crash Data",
+      "publisher": "Department of Transport and Planning (Victoria)",
+      "url": "https://www.kaggle.com/datasets/nationaldigitalau/vic-road-crashes",
+      "retrieved_via": "Kaggle API",
+      "version": 3,
+      "sha256": "43b8aab018a7c7a3b039c2224166b2f2f5cfab44e382c83a9b030b1ceac70dad",
+      "records_used": 71164,
+      "licence": "CC BY 4.0"
+    }
+  ],
+  "licence": {
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "skipped": [
+    {
+      "code": "208031184",
+      "name": "Braeside",
+      "reason": "population 31 is below 1000"
+    },
+    {
+      "code": "210011227",
+      "name": "Essendon Airport",
+      "reason": "population 13 is below 1000"
+    },
+    {
+      "code": "206041120",
+      "name": "Flemington Racecourse",
+      "reason": "population 77 is below 1000"
+    },
+    {
+      "code": "210051248",
+      "name": "Melbourne Airport",
+      "reason": "population 126 is below 1000"
+    },
+    {
+      "code": "208031192",
+      "name": "Moorabbin Airport",
+      "reason": "population 26 is below 1000"
+    },
+    {
+      "code": "206041507",
+      "name": "Royal Botanic Gardens Victoria",
+      "reason": "population 0 is below 1000"
+    },
+    {
+      "code": "206041127",
+      "name": "West Melbourne - Industrial",
+      "reason": "population 0 is below 1000"
+    }
+  ]
+}

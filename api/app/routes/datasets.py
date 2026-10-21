@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from ..dependencies import get_dataset_repo, require_api_key
-from ..models import Dataset, DatasetIn
+from ..models import Dataset, DatasetIn, TagCount
 from ..repositories import DatasetRepository, DuplicateDatasetError
 
 router = APIRouter(prefix="/datasets", tags=["datasets"])
@@ -13,6 +13,11 @@ def list_datasets(
     repo: DatasetRepository = Depends(get_dataset_repo),
 ) -> list[Dataset]:
     return repo.list_datasets(tag)
+
+
+@router.get("/tags", response_model=list[TagCount], summary="Number of datasets per tag")
+def tag_counts(repo: DatasetRepository = Depends(get_dataset_repo)) -> list[TagCount]:
+    return repo.tag_counts()
 
 
 @router.post(

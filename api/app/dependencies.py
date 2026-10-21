@@ -3,7 +3,7 @@ import secrets
 from fastapi import Header, HTTPException, Request, status
 
 from .config import Settings
-from .repositories import DatasetRepository, SuburbRepository
+from .repositories import DatasetRepository, ProvenanceRepository, SuburbRepository
 
 
 def get_settings(request: Request) -> Settings:
@@ -16,6 +16,10 @@ def get_suburb_repo(request: Request) -> SuburbRepository:
 
 def get_dataset_repo(request: Request) -> DatasetRepository:
     return request.app.state.dataset_repo
+
+
+def get_provenance_repo(request: Request) -> ProvenanceRepository:
+    return request.app.state.provenance_repo
 
 
 def require_api_key(request: Request, x_api_key: str | None = Header(default=None)) -> None:

@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is ignored by git, so personal values stay local.
+
+subscription_id  = "00000000-0000-0000-0000-000000000000" # az account show --query id -o tsv
+ssh_allowed_cidr = "203.0.113.10/32"                      # your IP: (Invoke-RestMethod https://api.ipify.org) + "/32"
+budget_email     = "you@example.com"                      # leave "" to skip the budget alert
+
+# Optional
+# location   = "australiaeast"
+# dns_label  = "urbanpulse-yourname"   # gives http://urbanpulse-yourname.australiaeast.cloudapp.azure.com

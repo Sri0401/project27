@@ -14,23 +14,13 @@ import java.util.List;
 /** JDBC access to the suburb tables. */
 public final class SuburbRepository {
 
-    private static final String UPSERT_SQL = """
-            INSERT INTO suburb_indicators (code, name, state, latitude, longitude, population, median_age,
-                median_weekly_rent, walk_score, green_space_pct, pt_stops, reference_year, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
-            ON CONFLICT (code) DO UPDATE SET
-                name = EXCLUDED.name,
-                state = EXCLUDED.state,
-                latitude = EXCLUDED.latitude,
-                longitude = EXCLUDED.longitude,
-                population = EXCLUDED.population,
-                median_age = EXCLUDED.median_age,
-                median_weekly_rent = EXCLUDED.median_weekly_rent,
-                walk_score = EXCLUDED.walk_score,
-                green_space_pct = EXCLUDED.green_space_pct,
-                pt_stops = EXCLUDED.pt_stops,
-                reference_year = EXCLUDED.reference_year,
-                updated_at = now()
+    private static final String DELETE_SQL = "DELETE FROM suburb_indicators";
+
+    private static final String INSERT_SQL = """
+            INSERT INTO suburb_indicators (code, name, state, latitude, longitude, area_sqkm, population,
+                median_age, median_weekly_rent, median_household_income, green_space_pct, pt_stops,
+                road_crashes_per_year, reference_year, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())
             """;
 
     private static final String RUN_SQL = """
@@ -55,29 +45,36 @@ public final class SuburbRepository {
         }
     }
 
-    /** Upserts all records and logs the run in a single transaction. */
+    /**
+     * Replaces the whole table with these records and logs the run, in a single transaction.
+     * Readers keep seeing the previous snapshot until the commit, and a failure leaves it untouched.
+     */
     public void save(List<SuburbRecord> records, String source, int rejected, Instant startedAt)
             throws SQLException {
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
-        try (PreparedStatement upsert = connection.prepareStatement(UPSERT_SQL);
+        try (Statement delete = connection.createStatement();
+             PreparedStatement insert = connection.prepareStatement(INSERT_SQL);
              PreparedStatement run = connection.prepareStatement(RUN_SQL)) {
+            delete.executeUpdate(DELETE_SQL);
             for (SuburbRecord r : records) {
-                upsert.setString(1, r.code());
-                upsert.setString(2, r.name());
-                upsert.setString(3, r.state());
-                upsert.setDouble(4, r.latitude());
-                upsert.setDouble(5, r.longitude());
-                upsert.setInt(6, r.population());
-                upsert.setDouble(7, r.medianAge());
-                upsert.setInt(8, r.medianWeeklyRent());
-                upsert.setInt(9, r.walkScore());
-                upsert.setDouble(10, r.greenSpacePct());
-                upsert.setInt(11, r.ptStops());
-                upsert.setInt(12, r.referenceYear());
-                upsert.addBatch();
+                insert.setString(1, r.code());
+                insert.setString(2, r.name());
+                insert.setString(3, r.state());
+                insert.setDouble(4, r.latitude());
+                insert.setDouble(5, r.longitude());
+                insert.setDouble(6, r.areaSqkm());
+                insert.setInt(7, r.population());
+                insert.setDouble(8, r.medianAge());
+                insert.setInt(9, r.medianWeeklyRent());
+                insert.setInt(10, r.medianHouseholdIncome());
+                insert.setDouble(11, r.greenSpacePct());
+                insert.setInt(12, r.ptStops());
+                insert.setDouble(13, r.roadCrashesPerYear());
+                insert.setInt(14, r.referenceYear());
+                insert.addBatch();
             }
-            upsert.executeBatch();
+            insert.executeBatch();
 
             run.setString(1, source);
             run.setInt(2, records.size());

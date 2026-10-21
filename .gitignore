@@ -17,3 +17,12 @@ target/
 *.iml
 .DS_Store
 Thumbs.db
+
+# Terraform (state can contain secrets; tfvars holds personal values)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+*.tfplan

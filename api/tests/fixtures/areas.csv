@@ -1,0 +1,6 @@
+code,name,state,latitude,longitude,area_sqkm,population,median_age,median_weekly_rent,median_household_income,green_space_pct,pt_stops,road_crashes_per_year,reference_year
+A1,Inner A,VIC,-37.80,144.97,2.0,20000,30,500,2000,10,80,60,2021
+A2,Leafy B,VIC,-37.85,145.05,4.0,12000,40,450,2250,40,40,12,2021
+A3,Outer C,VIC,-37.90,144.70,20.0,30000,35,380,1700,15,60,30,2021
+A4,Cheap D,VIC,-37.98,145.20,10.0,15000,36,300,1500,5,20,45,2021
+A5,"Pricey, E",VIC,-37.83,144.98,1.0,9000,33,700,2100,2,30,18,2021
