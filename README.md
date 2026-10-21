@@ -27,7 +27,8 @@ flowchart LR
 | [web/](web/) | HTML/CSS/JS, Leaflet, Chart.js, Nginx | Map, chart, sortable table and filters. Nginx serves the static files, proxies `/api` and sets security headers (CSP and others). |
 | [docker-compose.yml](docker-compose.yml) | Docker Compose | Five services with health checks and start-up ordering. The databases are not exposed to the host. |
 | [.github/workflows/](.github/workflows/) | GitHub Actions | Lint, unit tests, Java build, a full-stack Docker smoke test, and SSH deployment to Azure. |
-| [deploy/azure/](deploy/azure/) | Azure CLI, cloud-init | One-command provisioning of a B1s Ubuntu VM. |
+| [deploy/terraform/](deploy/terraform/) | Terraform / OpenTofu, azurerm | Infrastructure as Code: network, firewall, VM and budget alert, with validations that keep it inside the Azure free tier. |
+| [deploy/azure/](deploy/azure/) | cloud-init, Azure portal | First-boot script that installs Docker and starts the stack, plus a manual portal guide. |
 
 ## How this maps to the role
 
@@ -38,6 +39,7 @@ flowchart LR
 | Java, Python, JavaScript | Ingestor, API and frontend respectively |
 | Web servers and databases: Nginx, PostgreSQL, MongoDB | Nginx reverse proxy, PostgreSQL for relational indicators, MongoDB for flexible metadata |
 | Version control, CI/CD, containerisation | Git workflow ([CONTRIBUTING.md](CONTRIBUTING.md)), PR template, GitHub Actions CI/CD, multi-stage Dockerfiles |
+| Infrastructure as Code | Terraform defines all Azure resources, is checked in CI (`fmt`, `validate`), and has guard rails against non-free resources |
 | Cloud-first, scalable deployments | Configured through environment variables (12-factor style), runs on an Azure VM, and can switch to managed Azure databases by changing only the URLs |
 | Usable, secure, well-governed systems | Validation at every boundary, parameterised SQL, constant-time API-key check, non-root containers, CSP headers, ingestion audit log, health checks |
 | Documentation and support | This README, auto-generated API docs, a data dictionary and a deployment guide |
@@ -116,11 +118,17 @@ CI also starts the full Docker stack and runs `curl` checks through Nginx. See [
 
 ## Deploying to Azure
 
-See [deploy/azure/README.md](deploy/azure/README.md). In short, from Azure Cloud Shell run:
+The stack runs on one Azure for Students free-tier VM: Standard_B1s with a 64 GiB P6 disk. A cloud-init script installs Docker and starts everything on first boot.
 
-```bash
-bash deploy/azure/provision.sh https://github.com/Sri0401/project27.git
+```powershell
+cd deploy/terraform
+copy terraform.tfvars.example terraform.tfvars   # fill in subscription, your IP, email
+terraform init
+terraform plan -out tfplan
+terraform apply tfplan
 ```
+
+See [deploy/terraform/README.md](deploy/terraform/README.md) for setup, and [deploy/azure/README.md](deploy/azure/README.md) for the cost rules and a manual portal route.
 
 ## Project structure
 
@@ -129,7 +137,8 @@ api/          FastAPI service (app/, tests/, Dockerfile)
 ingestor/     Java ingestion job (Maven project, Dockerfile)
 web/          Static frontend + nginx.conf
 data/         Sample CSV and data dictionary
-deploy/azure/ Provisioning scripts and cloud-init
+deploy/terraform/ Infrastructure as Code for Azure
+deploy/azure/ cloud-init and manual portal guide
 .github/      CI/CD workflows and PR template
 ```
 

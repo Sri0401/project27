@@ -46,6 +46,21 @@ jobs:
           cache: maven
       - run: mvn -B verify
 
+  terraform:
+    name: Infrastructure (Terraform) - fmt & validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
   e2e:
     name: End-to-end (Docker Compose)
     needs: [api, ingestor]

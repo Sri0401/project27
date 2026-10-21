@@ -1,6 +1,6 @@
 #cloud-config
 # Runs once when the VM is first created. It installs Docker, clones the repo and starts the stack.
-# provision.sh replaces __REPO_URL__ before uploading this file.
+# To deploy a different repo, change the git clone URL below (provision.sh does this for you).
 package_update: true
 packages:
   - docker.io
@@ -17,7 +17,7 @@ swap:
 runcmd:
   - systemctl enable --now docker
   - usermod -aG docker azureuser
-  - git clone __REPO_URL__ /home/azureuser/urbanpulse
+  - git clone https://github.com/Sri0401/project27.git /home/azureuser/urbanpulse
   - >-
     cd /home/azureuser/urbanpulse &&
     printf 'POSTGRES_PASSWORD=%s\nMONGO_PASSWORD=%s\nAPI_KEY=%s\nWEB_PORT=80\n'
