@@ -36,7 +36,7 @@ services:
 
   ingestor:
     build: ./ingestor
-    command: ["/data/suburbs_sample.csv"]
+    command: ["/data/melbourne_sa2_2021.csv"]
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/urbanpulse
       DB_USER: urbanpulse
@@ -56,6 +56,10 @@ services:
       DATABASE_URL: postgresql://urbanpulse:${POSTGRES_PASSWORD}@postgres:5432/urbanpulse
       MONGO_URL: mongodb://urbanpulse:${MONGO_PASSWORD}@mongo:27017/?authSource=admin
       API_KEY: ${API_KEY:-}
+      # The pipeline's provenance manifest is recorded in MongoDB on start-up.
+      MANIFEST_PATH: /data/melbourne_sa2_2021.manifest.json
+    volumes:
+      - ./data:/data:ro
     depends_on:
       postgres:
         condition: service_healthy

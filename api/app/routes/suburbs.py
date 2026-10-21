@@ -2,47 +2,57 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from ..attribution import ATTRIBUTION, LICENCE_URL
 from ..dependencies import get_suburb_repo
 from ..models import IngestionRun, ScoredSuburb, SummaryResponse
 from ..repositories import SuburbRepository
-from ..scoring import liveability_scores, summarise
+from ..scoring import score, summarise
 
 router = APIRouter(tags=["suburbs"])
 
 SortField = Literal[
-    "liveability_score", "name", "population", "median_weekly_rent", "walk_score", "green_space_pct"
+    "liveability_score",
+    "name",
+    "population",
+    "population_density",
+    "median_weekly_rent",
+    "rent_to_income_pct",
+    "green_space_pct",
+    "pt_stops_per_sqkm",
+    "crashes_per_1000_residents",
 ]
 
 
 def _scored(repo: SuburbRepository) -> list[ScoredSuburb]:
-    # Score against every suburb, not just the filtered ones, so a score does not change with the filter.
-    suburbs = repo.list_suburbs()
-    scores = liveability_scores(suburbs)
-    return [ScoredSuburb(**s.model_dump(), liveability_score=scores[s.code]) for s in suburbs]
+    # Score against every area, not just the filtered ones, so a score does not change with the filter.
+    return score(repo.list_suburbs())
 
 
 @router.get("/suburbs", response_model=list[ScoredSuburb])
 def list_suburbs(
+    q: str | None = Query(default=None, max_length=50, description="Case-insensitive name search"),
     state: str | None = Query(default=None, max_length=8, description="e.g. VIC"),
-    min_walk_score: int | None = Query(default=None, ge=0, le=100),
+    min_green_space: float | None = Query(default=None, ge=0, le=100, description="Minimum green space %"),
     max_rent: int | None = Query(default=None, ge=0, description="Max median weekly rent (AUD)"),
     sort_by: SortField = "liveability_score",
     order: Literal["asc", "desc"] = "desc",
-    limit: int = Query(default=50, ge=1, le=500),
+    limit: int = Query(default=50, ge=1, le=1000),
     repo: SuburbRepository = Depends(get_suburb_repo),
 ) -> list[ScoredSuburb]:
+    needle = q.lower() if q else None
     results = [
         s
         for s in _scored(repo)
-        if (state is None or s.state == state.upper())
-        and (min_walk_score is None or s.walk_score >= min_walk_score)
+        if (needle is None or needle in s.name.lower())
+        and (state is None or s.state == state.upper())
+        and (min_green_space is None or s.green_space_pct >= min_green_space)
         and (max_rent is None or s.median_weekly_rent <= max_rent)
     ]
     results.sort(key=lambda s: getattr(s, sort_by), reverse=order == "desc")
     return results[:limit]
 
 
-@router.get("/suburbs/geojson", summary="All suburbs as a GeoJSON FeatureCollection")
+@router.get("/suburbs/geojson", summary="All areas as a GeoJSON FeatureCollection")
 def suburbs_geojson(repo: SuburbRepository = Depends(get_suburb_repo)) -> dict[str, Any]:
     features = [
         {
@@ -54,7 +64,14 @@ def suburbs_geojson(repo: SuburbRepository = Depends(get_suburb_repo)) -> dict[s
         }
         for s in _scored(repo)
     ]
-    return {"type": "FeatureCollection", "features": features}
+    # Extra top-level members are allowed by GeoJSON (RFC 7946, section 6.1), so the credit and
+    # licence link travel with the file when it is downloaded or opened in a GIS tool.
+    return {
+        "type": "FeatureCollection",
+        "attribution": ATTRIBUTION,
+        "license": LICENCE_URL,
+        "features": features,
+    }
 
 
 @router.get("/suburbs/{code}", response_model=ScoredSuburb)
@@ -62,16 +79,16 @@ def get_suburb(code: str, repo: SuburbRepository = Depends(get_suburb_repo)) -> 
     for s in _scored(repo):
         if s.code.lower() == code.lower():
             return s
-    raise HTTPException(status.HTTP_404_NOT_FOUND, f"Suburb '{code}' not found")
+    raise HTTPException(status.HTTP_404_NOT_FOUND, f"Area '{code}' not found")
 
 
 @router.get("/indicators/summary", response_model=SummaryResponse)
 def indicator_summary(repo: SuburbRepository = Depends(get_suburb_repo)) -> SummaryResponse:
-    suburbs = repo.list_suburbs()
+    scored = _scored(repo)
     return SummaryResponse(
-        suburb_count=len(suburbs),
-        total_population=sum(s.population for s in suburbs),
-        indicators=summarise(suburbs),
+        suburb_count=len(scored),
+        total_population=sum(s.population for s in scored),
+        indicators=summarise(scored),
     )
 
 

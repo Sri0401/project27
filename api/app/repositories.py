@@ -1,21 +1,23 @@
 """Data access.
 
-The routes depend only on the two Protocols below. PostgreSQL and MongoDB back them in
-production. In-memory versions back them in tests and when running without databases.
+The routes depend only on the Protocols below. PostgreSQL and MongoDB back them in production.
+In-memory versions back them in tests and when running without databases.
 """
 
 import csv
+from collections import Counter
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 
 from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
-from pymongo import ASCENDING, MongoClient
+from pymongo import ASCENDING, DESCENDING
+from pymongo.database import Database
 from pymongo.errors import DuplicateKeyError as MongoDuplicateKeyError
 from pymongo.errors import PyMongoError
 
-from .models import Dataset, DatasetIn, IngestionRun, Suburb
+from .models import Dataset, DatasetIn, DatasetVersion, DatasetVersionSummary, IngestionRun, Suburb, TagCount
 
 
 class DuplicateDatasetError(Exception):
@@ -32,15 +34,21 @@ class SuburbRepository(Protocol):
 class DatasetRepository(Protocol):
     def list_datasets(self, tag: str | None = None) -> list[Dataset]: ...
     def add_dataset(self, dataset: DatasetIn) -> Dataset: ...
+    def tag_counts(self) -> list[TagCount]: ...
     def ping(self) -> bool: ...
-    def close(self) -> None: ...
+
+
+class ProvenanceRepository(Protocol):
+    def record(self, manifest: dict[str, Any]) -> bool: ...
+    def latest(self) -> DatasetVersion | None: ...
+    def history(self, limit: int = 20) -> list[DatasetVersionSummary]: ...
 
 
 # --- PostgreSQL -------------------------------------------------------------------------------
 
 _SUBURB_COLUMNS = (
-    "code, name, state, latitude, longitude, population, median_age, median_weekly_rent, "
-    "walk_score, green_space_pct, pt_stops, reference_year"
+    "code, name, state, latitude, longitude, area_sqkm, population, median_age, median_weekly_rent, "
+    "median_household_income, green_space_pct, pt_stops, road_crashes_per_year, reference_year"
 )
 
 
@@ -80,14 +88,14 @@ class PostgresSuburbRepository:
 
 
 # --- MongoDB ----------------------------------------------------------------------------------
+# Both collections hold documents whose shape varies: publishers describe datasets differently, and
+# a provenance manifest nests sources and excluded areas that change from one build to the next.
 
 
 class MongoDatasetRepository:
-    """Dataset metadata varies a lot between publishers, so it lives in a document store."""
-
-    def __init__(self, mongo_url: str, db_name: str) -> None:
-        self._client: MongoClient = MongoClient(mongo_url, serverSelectionTimeoutMS=3000, tz_aware=True)
-        self._collection = self._client[db_name]["datasets"]
+    def __init__(self, db: Database) -> None:
+        self._db = db
+        self._collection = db["datasets"]
         self._indexes_ready = False
 
     def _ensure_indexes(self) -> None:
@@ -110,15 +118,75 @@ class MongoDatasetRepository:
             raise DuplicateDatasetError(dataset.slug) from e
         return stored
 
+    def tag_counts(self) -> list[TagCount]:
+        """Count datasets per tag with an aggregation pipeline, so the database does the work."""
+        pipeline = [
+            {"$unwind": "$tags"},
+            {"$group": {"_id": "$tags", "count": {"$sum": 1}}},
+            {"$sort": {"count": DESCENDING, "_id": ASCENDING}},
+            {"$project": {"_id": 0, "tag": "$_id", "count": 1}},
+        ]
+        return [TagCount.model_validate(doc) for doc in self._collection.aggregate(pipeline)]
+
     def ping(self) -> bool:
         try:
-            self._client.admin.command("ping")
+            self._db.client.admin.command("ping")
             return True
         except PyMongoError:
             return False
 
-    def close(self) -> None:
-        self._client.close()
+
+class MongoProvenanceRepository:
+    """Stores one document per dataset version, keyed by the checksum of the CSV it describes."""
+
+    def __init__(self, db: Database) -> None:
+        self._collection = db["dataset_versions"]
+        self._indexes_ready = False
+
+    def _ensure_indexes(self) -> None:
+        if not self._indexes_ready:
+            self._collection.create_index([("output.sha256", ASCENDING)], unique=True)
+            self._collection.create_index([("generated_at", DESCENDING)])
+            self._indexes_ready = True
+
+    def record(self, manifest: dict[str, Any]) -> bool:
+        """Store a manifest if its dataset version is new. Returns True if it was inserted.
+
+        An upsert keyed on the checksum makes this idempotent: every API replica can call it on
+        start-up and the version is stored exactly once.
+        """
+        self._ensure_indexes()
+        version = DatasetVersion(**manifest, recorded_at=datetime.now(UTC))
+        result = self._collection.update_one(
+            {"output.sha256": version.output.sha256},
+            {"$setOnInsert": version.model_dump(mode="json")},
+            upsert=True,
+        )
+        return result.upserted_id is not None
+
+    def latest(self) -> DatasetVersion | None:
+        doc = self._collection.find_one({}, {"_id": 0}, sort=[("generated_at", DESCENDING)])
+        return DatasetVersion.model_validate(doc) if doc else None
+
+    def history(self, limit: int = 20) -> list[DatasetVersionSummary]:
+        # $project returns only summary fields and counts excluded areas in the database,
+        # instead of sending every source and excluded area to the API.
+        pipeline = [
+            {"$sort": {"generated_at": DESCENDING}},
+            {"$limit": limit},
+            {
+                "$project": {
+                    "_id": 0,
+                    "dataset": 1,
+                    "generated_at": 1,
+                    "pipeline_version": 1,
+                    "rows": "$output.rows",
+                    "sha256": "$output.sha256",
+                    "skipped_count": {"$size": "$skipped"},
+                }
+            },
+        ]
+        return [DatasetVersionSummary.model_validate(doc) for doc in self._collection.aggregate(pipeline)]
 
 
 # --- In-memory --------------------------------------------------------------------------------
@@ -171,8 +239,38 @@ class InMemoryDatasetRepository:
         self._datasets[dataset.slug] = stored
         return stored
 
+    def tag_counts(self) -> list[TagCount]:
+        counts = Counter(tag for d in self._datasets.values() for tag in d.tags)
+        return [TagCount(tag=t, count=c) for t, c in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))]
+
     def ping(self) -> bool:
         return True
 
-    def close(self) -> None:
-        pass
+
+class InMemoryProvenanceRepository:
+    def __init__(self) -> None:
+        self._versions: dict[str, DatasetVersion] = {}
+
+    def record(self, manifest: dict[str, Any]) -> bool:
+        version = DatasetVersion(**manifest, recorded_at=datetime.now(UTC))
+        if version.output.sha256 in self._versions:
+            return False
+        self._versions[version.output.sha256] = version
+        return True
+
+    def latest(self) -> DatasetVersion | None:
+        return max(self._versions.values(), key=lambda v: v.generated_at, default=None)
+
+    def history(self, limit: int = 20) -> list[DatasetVersionSummary]:
+        ordered = sorted(self._versions.values(), key=lambda v: v.generated_at, reverse=True)[:limit]
+        return [
+            DatasetVersionSummary(
+                dataset=v.dataset,
+                generated_at=v.generated_at,
+                pipeline_version=v.pipeline_version,
+                rows=v.output.rows,
+                sha256=v.output.sha256,
+                skipped_count=len(v.skipped),
+            )
+            for v in ordered
+        ]
