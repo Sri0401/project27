@@ -78,6 +78,10 @@ h2 { margin: 0 0 .75rem; font-size: 1rem; }
 .filters output { float: right; font-weight: 400; color: var(--muted); }
 .status { color: var(--muted); font-size: .85rem; min-height: 1.5em; }
 .status.error { color: var(--low); }
+.method { font-size: .85rem; color: var(--muted); }
+.method summary { cursor: pointer; color: var(--text); font-weight: 600; }
+.method ul { padding-left: 1.1rem; margin: .4rem 0; }
+.filters input[type="search"] { padding: .35rem .5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
 
 #map { height: 380px; border-radius: 6px; }
 
@@ -86,7 +90,8 @@ h2 { margin: 0 0 .75rem; font-size: 1rem; }
 
 .chart-wrap { position: relative; height: 300px; }
 
-.table-scroll { overflow-x: auto; }
+.table-scroll { overflow: auto; max-height: 480px; }
+thead th { position: sticky; top: 0; background: var(--surface); }
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th, td { padding: .45rem .6rem; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; }
@@ -101,5 +106,10 @@ tbody tr:hover, tbody tr.selected { background: color-mix(in srgb, var(--accent)
 .datasets a { color: var(--accent); font-weight: 600; text-decoration: none; }
 .datasets p { margin: .35rem 0; font-size: .85rem; color: var(--muted); }
 .tag { display: inline-block; margin: 0 .25rem .25rem 0; padding: 0 .45rem; border-radius: 999px; font-size: .75rem; border: 1px solid var(--border); }
+
+.provenance-panel table { font-size: .85rem; }
+.provenance-panel td, .provenance-panel th { white-space: normal; text-align: left; }
+.provenance-panel code { font-size: .8rem; }
+@media (min-width: 960px) { .provenance-panel { grid-column: 1 / 4; } }
 
 .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; padding: 1rem; color: var(--muted); font-size: .8rem; }
