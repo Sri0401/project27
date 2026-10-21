@@ -20,8 +20,9 @@ import java.util.regex.Pattern;
 public final class CsvSuburbParser {
 
     static final List<String> REQUIRED_COLUMNS = List.of(
-            "code", "name", "state", "latitude", "longitude", "population", "median_age",
-            "median_weekly_rent", "walk_score", "green_space_pct", "pt_stops", "reference_year");
+            "code", "name", "state", "latitude", "longitude", "area_sqkm", "population", "median_age",
+            "median_weekly_rent", "median_household_income", "green_space_pct", "pt_stops", "road_crashes_per_year",
+            "reference_year");
 
     private static final Pattern CODE_PATTERN = Pattern.compile("[A-Za-z0-9-]{1,16}");
 
@@ -83,12 +84,14 @@ public final class CsvSuburbParser {
                 row.text("state").toUpperCase(),
                 row.decimal("latitude", -90, 90),
                 row.decimal("longitude", -180, 180),
+                row.decimal("area_sqkm", 0.0001, 1_000_000),
                 row.integer("population", 0, Integer.MAX_VALUE),
                 row.decimal("median_age", 0, 120),
                 row.integer("median_weekly_rent", 0, Integer.MAX_VALUE),
-                row.integer("walk_score", 0, 100),
+                row.integer("median_household_income", 0, Integer.MAX_VALUE),
                 row.decimal("green_space_pct", 0, 100),
                 row.integer("pt_stops", 0, Integer.MAX_VALUE),
+                row.decimal("road_crashes_per_year", 0, 1_000_000),
                 row.integer("reference_year", 1900, 2100));
     }
 
