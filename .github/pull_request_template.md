@@ -4,7 +4,7 @@
 
 ## How it was tested
 
-- [ ] `pytest` (api)
+- [ ] `pytest` (api, pipeline)
 - [ ] `mvn verify` (ingestor)
 - [ ] Checked by hand with `docker compose up`
 

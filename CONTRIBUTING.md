@@ -12,6 +12,7 @@
 
 ```bash
 cd api && ruff check . && ruff format --check . && pytest
+cd pipeline && ruff check . && ruff format --check . && pytest
 cd ingestor && mvn verify
 docker compose up -d --build    # optional full-stack check
 ```
