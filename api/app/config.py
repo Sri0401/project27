@@ -19,6 +19,8 @@ class Settings:
     manifest_path: Path = REPO_ROOT / "data" / "melbourne_sa2_2021.manifest.json"
     # Writes need this key in the X-API-Key header. If it is empty, writes are disabled.
     api_key: str = ""
+    # Git commit being served. The VM's deploy script sets it, so CI can confirm a rollout.
+    app_version: str = "dev"
     cors_origins: tuple[str, ...] = ()
     # Serve the web/ folder from the API. Only useful when running without Nginx.
     serve_static: bool = False
@@ -35,6 +37,7 @@ class Settings:
             sample_csv=Path(os.getenv("SAMPLE_CSV", str(defaults.sample_csv))),
             manifest_path=Path(os.getenv("MANIFEST_PATH", str(defaults.manifest_path))),
             api_key=os.getenv("API_KEY", ""),
+            app_version=os.getenv("APP_VERSION") or "dev",
             cors_origins=tuple(o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()),
             serve_static=os.getenv("SERVE_STATIC", "false").lower() == "true",
             static_dir=Path(os.getenv("STATIC_DIR", str(defaults.static_dir))),

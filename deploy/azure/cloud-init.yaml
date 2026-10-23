@@ -7,6 +7,7 @@ packages:
   - docker-compose-v2
   - git
   - openssl
+  - jq
 
 # A B1s VM has 1 GB of RAM. Swap stops the Maven build and MongoDB from running out of memory.
 swap:
@@ -25,3 +26,5 @@ runcmd:
     chmod 600 .env
   - chown -R azureuser:azureuser /home/azureuser/urbanpulse
   - cd /home/azureuser/urbanpulse && docker compose up -d --build
+  # Pull-based continuous deployment: from now on the VM updates itself from main (deploy/vm/).
+  - bash /home/azureuser/urbanpulse/deploy/vm/install.sh

@@ -56,6 +56,8 @@ services:
       DATABASE_URL: postgresql://urbanpulse:${POSTGRES_PASSWORD}@postgres:5432/urbanpulse
       MONGO_URL: mongodb://urbanpulse:${MONGO_PASSWORD}@mongo:27017/?authSource=admin
       API_KEY: ${API_KEY:-}
+      # Set by deploy/vm/deploy.sh to the deployed git commit; shown by /api/health.
+      APP_VERSION: ${APP_VERSION:-dev}
       # The pipeline's provenance manifest is recorded in MongoDB on start-up.
       MANIFEST_PATH: /data/melbourne_sa2_2021.manifest.json
     volumes:

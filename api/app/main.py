@@ -122,7 +122,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> JSONResponse:
         checks = {"suburb_store": suburb_repo.ping(), "dataset_store": dataset_repo.ping()}
         ok = all(checks.values())
-        body = Health(status="ok" if ok else "degraded", backend=cfg.data_backend, checks=checks)
+        body = Health(
+            status="ok" if ok else "degraded",
+            backend=cfg.data_backend,
+            version=cfg.app_version,
+            checks=checks,
+        )
         # 503 lets Docker health checks and load balancers notice a broken dependency.
         return JSONResponse(body.model_dump(), status_code=200 if ok else 503)
 
