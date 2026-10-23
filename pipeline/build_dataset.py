@@ -9,6 +9,7 @@ Sources (all Creative Commons Attribution 4.0):
 
 Usage:
   python build_dataset.py                        # Greater Melbourne -> ../data/melbourne_sa2_2021.csv
+                                                 # (runs every stage in stages.py; Airflow runs them as tasks)
   python build_dataset.py --gccsa 2RVIC --out ../data/rest_of_vic_sa2_2021.csv
 
 Downloads are cached in .cache/, so re-runs are fast. Use --refresh to download them again.
@@ -28,7 +29,7 @@ import zipfile
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 import httpx
@@ -408,80 +409,11 @@ def main() -> None:
     if not args.gccsa.startswith("2"):
         parser.error("Only Victorian areas are supported, because the Census and GTFS inputs cover Victoria")
 
-    with make_client() as client:
-        areas = fetch_areas(client, args.gccsa)
-        land_use = fetch_land_use(client, args.gccsa)
-        census_zip = download(client, CENSUS_DATAPACK_URL, args.cache_dir / "census_gcp_sa2_vic.zip", args.refresh)
-        census = load_census(census_zip)
-        gtfs = download(client, GTFS_URL, args.cache_dir / "gtfs_vic.zip", args.refresh)
-        crash_zip = download(
-            client, CRASHES_URL, args.cache_dir / f"vic_road_crashes_v{CRASHES_KAGGLE_VERSION}.zip", args.refresh
-        )
+    # Imported here because stages.py imports this module.
+    from stages import Paths, run_all
 
-    stops = count_stops(areas, iter_gtfs_stops(gtfs))
-    crashes = count_crashes(crash_zip)
-    rows, skipped = build_rows(areas, census, land_use, stops, crashes)
-    for s in skipped:
-        log.info("Skipped %s (%s): %s", s["name"], s["code"], s["reason"])
-    write_csv(rows, args.out)
-    log.info("Wrote %d areas to %s (%d skipped)", len(rows), args.out, len(skipped))
-
-    abs_publisher = "Australian Bureau of Statistics"
-    dtp_publisher = "Department of Transport and Planning (Victoria)"
-    sources: list[dict[str, object]] = [
-        {
-            "name": "ABS ASGS 2021 SA2 boundaries",
-            "publisher": abs_publisher,
-            "url": f"{ABS_ARCGIS}/SA2/MapServer",
-            "retrieved_via": "ArcGIS REST API",
-            "records_used": len(areas),
-        },
-        {
-            "name": "ABS ASGS 2021 Mesh Block land use (aggregated by SA2 on the server)",
-            "publisher": abs_publisher,
-            "url": f"{ABS_ARCGIS}/MB/MapServer",
-            "retrieved_via": "ArcGIS REST API",
-            "records_used": len(land_use),
-        },
-        {
-            "name": "ABS 2021 Census GCP DataPack, SA2, Victoria (G01, G02)",
-            "publisher": abs_publisher,
-            "url": CENSUS_DATAPACK_URL,
-            "retrieved_via": "file download",
-            "sha256": sha256_of(census_zip),
-            "records_used": len(census),
-        },
-        {
-            "name": "Victorian GTFS Schedule",
-            "publisher": dtp_publisher,
-            "url": GTFS_URL,
-            "retrieved_via": "file download",
-            "sha256": sha256_of(gtfs),
-            "records_used": sum(stops.values()),
-        },
-        {
-            "name": "Victoria Road Crash Data",
-            "publisher": dtp_publisher,
-            "url": f"https://www.kaggle.com/datasets/{CRASHES_KAGGLE_REF}",
-            "retrieved_via": "Kaggle API",
-            "version": CRASHES_KAGGLE_VERSION,
-            "sha256": sha256_of(crash_zip),
-            "records_used": sum(crashes.values()),
-        },
-    ]
-    for source in sources:
-        source["licence"] = LICENCE["name"]
-    manifest = build_manifest(
-        out=args.out,
-        rows=rows,
-        skipped=skipped,
-        gccsa=args.gccsa,
-        sources=sources,
-        generated_at=datetime.now(UTC),
-    )
-    manifest_path = args.out.with_name(f"{args.out.stem}.manifest.json")
-    write_manifest(manifest, manifest_path)
-    log.info("Wrote provenance manifest to %s", manifest_path)
+    paths = Paths(cache_dir=args.cache_dir, work_dir=args.cache_dir / "work", out=args.out)
+    run_all(paths, args.gccsa, refresh=args.refresh)
     log.info("Attribution: data from the ABS and DTP Victoria (crashes via Kaggle), CC BY 4.0 - see NOTICE.md")
 
 
