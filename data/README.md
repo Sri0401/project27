@@ -8,7 +8,8 @@ The file is produced by [`pipeline/build_dataset.py`](../pipeline/build_dataset.
 cd pipeline
 python -m venv .venv && .venv/Scripts/activate      # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-python build_dataset.py        # about 300 MB of downloads the first time, then cached
+python build_dataset.py        # about 330 MB of downloads the first time, then cached
+# or run it on a schedule with Airflow: see pipeline/README.md
 ```
 
 ## Sources and licences

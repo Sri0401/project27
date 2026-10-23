@@ -49,6 +49,29 @@ jobs:
       - run: ruff format --check .
       - run: pytest -q  # unit tests only; they never call the live government APIs
 
+  airflow:
+    name: Orchestration (Airflow) - DAG tests
+    runs-on: ubuntu-24.04  # pinned: ubuntu-latest is moving to 26.04
+    env:
+      AIRFLOW_VERSION: "3.3.2"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW_HOME: ${{ github.workspace }}/.airflow
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install Airflow with its official constraints
+        run: |
+          pip install "apache-airflow==${AIRFLOW_VERSION}" httpx shapely pytest \
+            --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-3.12.txt"
+      # Loads the DAG with Airflow and checks for import errors, the schedule, every task
+      # dependency and the retry policy. The pipeline logic itself is tested in the job above.
+      - run: pytest -q tests/test_dag.py
+
   ingestor:
     name: Ingestor (Java) - build & test
     runs-on: ubuntu-24.04  # pinned: ubuntu-latest is moving to 26.04
@@ -81,7 +104,7 @@ jobs:
 
   e2e:
     name: End-to-end (Docker Compose)
-    needs: [api, pipeline, ingestor]
+    needs: [api, pipeline, airflow, ingestor]
     runs-on: ubuntu-24.04  # pinned: ubuntu-latest is moving to 26.04
     steps:
       - uses: actions/checkout@v5

@@ -7,7 +7,7 @@
 
 UrbanPulse is a small, cloud-ready research data platform built on **real open government data** for **354 Greater Melbourne neighbourhoods** (ABS SA2 areas).
 
-- A **Python** pipeline combines the ABS 2021 Census, ABS boundary and land-use services, the Victorian public transport GTFS feed, and Victorian road crash data from **Kaggle**.
+- A **Python** pipeline, orchestrated by **Apache Airflow**, combines the ABS 2021 Census, ABS boundary and land-use services, the Victorian public transport GTFS feed, and Victorian road crash data from **Kaggle**.
 - A **Java** job validates the result and loads it into **PostgreSQL**.
 - A **Python (FastAPI)** REST API computes derived indicators and a liveability score, and serves GeoJSON. **MongoDB** holds an open-dataset catalogue and a provenance record of every dataset version.
 - A **JavaScript** map dashboard, served by **Nginx**, lets researchers and policymakers explore the results.
@@ -24,7 +24,7 @@ flowchart LR
       GTFS[DTP Victoria<br/>GTFS timetable]
       CRASH[DTP road crash data<br/>via Kaggle]
     end
-    CEN & ASGS & GTFS & CRASH --> PIPE[Python pipeline<br/>spatial join, aggregation]
+    CEN & ASGS & GTFS & CRASH --> PIPE[Python pipeline<br/>Airflow DAG, weekly<br/>spatial join, quality gate]
     PIPE --> CSV[(melbourne_sa2_2021.csv<br/>+ provenance manifest)]
     CSV --> ING[Java 21 ingestor<br/>validate + snapshot load]
     ING -->|JDBC, one transaction| PG[(PostgreSQL 16)]
@@ -36,7 +36,7 @@ flowchart LR
 
 | Component | Tech | Responsibility |
 |---|---|---|
-| [pipeline/](pipeline/) | Python, httpx, Shapely, pytest | Downloads and caches the sources, and writes a provenance manifest (sources, versions, checksums, parameters, excluded areas) next to the CSV. Gets land use aggregated on the ABS server, counts about 29,000 transport stops per area with a spatial index (STRtree), joins everything on SA2 code, and filters out areas with unreliable data. See [data/README.md](data/README.md). |
+| [pipeline/](pipeline/) | Python, Apache Airflow 3, httpx, Shapely, pytest | An **Airflow DAG** of 11 tasks (parallel extracts, retries, a weekly schedule) runs the same stages as the command-line build. A **quality gate** of 8 checks blocks publishing if anything looks wrong. Downloads and caches the sources, and writes a provenance manifest (sources, versions, checksums, parameters, excluded areas) next to the CSV. Gets land use aggregated on the ABS server, counts about 29,000 transport stops per area with a spatial index (STRtree), joins everything on SA2 code, and filters out areas with unreliable data. See [data/README.md](data/README.md). |
 | [ingestor/](ingestor/) | Java 21, Maven, JDBC, JUnit 5 | Parses the CSV by header name and rejects bad rows with line-level errors. Applies the schema, replaces the snapshot in a single transaction and records an audit row for the run. Aborts if more than 10% of rows are rejected. |
 | [api/](api/) | Python 3.11, FastAPI, Pydantic, psycopg 3, PyMongo, pytest, mongomock | REST endpoints, a provenance store and catalogue statistics in MongoDB (aggregation pipelines, upserts, indexes), input validation, derived indicators, percentile-based scoring, GeoJSON output, an API-key-protected write endpoint and a health check. The repository pattern lets the same code run against Postgres/Mongo or in memory. |
 | [web/](web/) | HTML/CSS/JS, Leaflet, Chart.js, Nginx | Map, chart, searchable and sortable table, and filters. Nginx serves the static files, proxies `/api` and sets security headers (CSP and others). |
@@ -49,7 +49,8 @@ flowchart LR
 
 | Job description | Where it shows up here |
 |---|---|
-| Design, develop, test and maintain software components | Four components with clear boundaries, 53 automated tests, and linting enforced in CI |
+| Design, develop, test and maintain software components | Four components with clear boundaries, 72 automated tests, and linting enforced in CI |
+| Data pipelines and orchestration | An Apache Airflow DAG with parallel tasks, retries, a schedule and a data-quality gate. See [pipeline/README.md](pipeline/README.md) |
 | Integrations and RESTful services connecting data, analytical tools and visualisation | Integrates ABS REST services, the ABS Census, GTFS and the Kaggle API. Exposes a FastAPI REST API that feeds a Leaflet map and Chart.js. OpenAPI docs at `/api/docs` |
 | Urban research and policy context | Real neighbourhood indicators (transport access, green space, housing affordability, road safety) at the ABS SA2 geography used in Australian urban research |
 | Java, Python, JavaScript | Ingestor, pipeline and API, and frontend |
@@ -94,7 +95,7 @@ Open http://localhost:8080.
 The processed CSV is committed, so you don't need to run the pipeline to use the app. To rebuild it from the sources (about 330 MB of downloads the first time, then cached; no Kaggle account needed):
 
 ```bash
-cd pipeline && pip install -r requirements.txt && python build_dataset.py
+cd pipeline && pip install -r requirements.txt && python build_dataset.py   # or run the Airflow DAG, see pipeline/README.md
 docker compose run --rm ingestor /data/melbourne_sa2_2021.csv   # reload into PostgreSQL
 ```
 
@@ -150,7 +151,8 @@ Percentile ranks are used instead of min-max scaling because real data has outli
 
 ```bash
 cd api && ruff check . && pytest            # 38 tests: scoring, filtering, validation, auth, attribution, MongoDB repositories, provenance, data contracts
-cd pipeline && ruff check . && pytest       # 10 tests: GTFS parsing, spatial counting, Census join, crash counts, filtering, manifest
+cd pipeline && ruff check . && pytest       # 25 tests: parsing, spatial counting, joins, quality checks, stages, manifest
+# + 4 Airflow DAG tests (structure, schedule, dependencies, retries), run in WSL/Linux and in CI
 cd ingestor && mvn verify                   # 5 tests: CSV parsing and validation
 ```
 
@@ -173,7 +175,7 @@ See [deploy/terraform/README.md](deploy/terraform/README.md) for setup, and [dep
 ## Project structure
 
 ```
-pipeline/         Data pipeline: open data sources to CSV (Python)
+pipeline/         Data pipeline: stages, quality checks, Airflow DAG (dags/) and WSL setup (airflow-setup/)
 data/             Processed dataset, provenance manifest and data dictionary
 ingestor/         Java ingestion job (Maven project, Dockerfile)
 api/              FastAPI service (app/, tests/, Dockerfile)
