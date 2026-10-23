@@ -95,15 +95,9 @@ Usage takes up to two days to appear.
 - **Subscription > Overview > Top free services**: *Virtual Machines, BS Series* and *P6 Disks* should show usage **within limit**.
 - **Cost Management > Cost analysis**: only the public IP address should show any cost.
 
-## Optional: deploy automatically from GitHub
+## Automatic deployment from GitHub
 
-[`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml) connects to the VM over SSH after each green CI run on `main` and runs `git pull` and `docker compose up -d --build`. In the repo, go to **Settings > Secrets and variables > Actions** and add:
-
-- `AZURE_VM_HOST`: the public IP
-- `AZURE_VM_USER`: `azureuser`
-- `AZURE_VM_SSH_KEY`: the full contents of `urbanpulse-key.pem`
-
-GitHub Actions connects from addresses that change, so this needs SSH open to any address. If you locked SSH to your own IP in Step 4, either leave this off and deploy by hand (`ssh ... "cd ~/urbanpulse && git pull && docker compose up -d --build"`), or accept the open port. It's protected by key-only login.
+The VM updates itself. Every 5 minutes it deploys the latest commit on `main` once CI has passed for it, health-checks the result and rolls back on failure. cloud-init sets this up, so no secrets or open SSH port are needed. See [../vm/README.md](../vm/README.md).
 
 ## Stopping and removing
 

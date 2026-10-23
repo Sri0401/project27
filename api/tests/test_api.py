@@ -19,8 +19,21 @@ def test_health(client):
     assert r.json() == {
         "status": "ok",
         "backend": "memory",
+        "version": "dev",
         "checks": {"suburb_store": True, "dataset_store": True},
     }
+
+
+def test_health_reports_deployed_version(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    from .conftest import FIXTURE_CSV
+
+    settings = Settings(data_backend="memory", sample_csv=FIXTURE_CSV, app_version="1a2b3c4")
+    with TestClient(create_app(settings)) as c:
+        assert c.get("/api/health").json()["version"] == "1a2b3c4"
 
 
 def test_list_sorted_by_score_by_default(client):

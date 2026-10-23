@@ -1,7 +1,11 @@
 name: Deploy to Azure VM
 
-# Runs after CI passes on main, or by hand from the Actions tab.
-# Needs these repository secrets: AZURE_VM_HOST, AZURE_VM_USER, AZURE_VM_SSH_KEY (see deploy/azure/README.md).
+# The VM deploys itself: every 5 minutes, deploy/vm/deploy.sh pulls main once CI has passed for
+# that commit, rebuilds, health-checks and rolls back on failure. GitHub never connects to the VM,
+# so SSH stays locked to the owner's IP.
+#
+# This workflow verifies the rollout. It waits until the live site reports the new commit through
+# /api/health, and fails if that doesn't happen in time. A green run here means "live in production".
 on:
   workflow_run:
     workflows: [CI]
@@ -12,32 +16,44 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true  # a newer merge supersedes an older rollout
+
 jobs:
-  deploy:
+  verify-rollout:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
-    environment: production
+    timeout-minutes: 25
+    environment:
+      name: production
+      url: ${{ vars.LIVE_URL || 'http://4.196.164.233' }}
+    env:
+      LIVE_URL: ${{ vars.LIVE_URL || 'http://4.196.164.233' }}
+      COMMIT: ${{ github.event.workflow_run.head_sha || github.sha }}
     steps:
-      - name: Check deployment secrets are configured
-        env:
-          HOST: ${{ secrets.AZURE_VM_HOST }}
+      - name: Wait for the VM to deploy this commit
         run: |
-          if [ -z "$HOST" ]; then
-            echo "::notice::AZURE_VM_HOST is not set, so deployment is skipped."
-            echo "skip=true" >> "$GITHUB_ENV"
-          fi
-      - name: Pull and restart on the VM
-        if: env.skip != 'true'
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.AZURE_VM_HOST }}
-          username: ${{ secrets.AZURE_VM_USER }}
-          key: ${{ secrets.AZURE_VM_SSH_KEY }}
-          script: |
-            set -e
-            cd ~/urbanpulse
-            git pull --ff-only
-            docker compose up -d --build
-            docker image prune -f
-            sleep 10
-            curl -fsS http://localhost/api/health
+          want="${COMMIT:0:7}"
+          echo "Waiting for $LIVE_URL to serve commit $want (the VM checks for new releases every 5 minutes)"
+          deadline=$((SECONDS + 20 * 60))
+          while ((SECONDS < deadline)); do
+            health="$(curl -fsS --max-time 10 "$LIVE_URL/api/health" || echo '{}')"
+            version="$(jq -r '.version // "unknown"' <<<"$health")"
+            status="$(jq -r '.status // "unreachable"' <<<"$health")"
+            if [[ "$version" == "$want" && "$status" == "ok" ]]; then
+              echo "::notice::Live site is serving $want and reports healthy"
+              exit 0
+            fi
+            echo "$(date -u +%H:%M:%S) live version=$version status=$status"
+            sleep 30
+          done
+          echo "::error::The live site did not report commit $want within 20 minutes. Check the VM: journalctl -u urbanpulse-deploy -n 50"
+          exit 1
+
+      - name: Smoke-test the live site
+        run: |
+          set -euo pipefail
+          test "$(curl -fsS "$LIVE_URL/api/suburbs?limit=1000" | jq length)" -gt 300
+          curl -fsS "$LIVE_URL/api/provenance" | jq -e '.output.rows > 300'
+          curl -fsS "$LIVE_URL/" | grep -q "Based on ABS data"

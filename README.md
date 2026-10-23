@@ -41,7 +41,8 @@ flowchart LR
 | [api/](api/) | Python 3.11, FastAPI, Pydantic, psycopg 3, PyMongo, pytest, mongomock | REST endpoints, a provenance store and catalogue statistics in MongoDB (aggregation pipelines, upserts, indexes), input validation, derived indicators, percentile-based scoring, GeoJSON output, an API-key-protected write endpoint and a health check. The repository pattern lets the same code run against Postgres/Mongo or in memory. |
 | [web/](web/) | HTML/CSS/JS, Leaflet, Chart.js, Nginx | Map, chart, searchable and sortable table, and filters. Nginx serves the static files, proxies `/api` and sets security headers (CSP and others). |
 | [docker-compose.yml](docker-compose.yml) | Docker Compose | Five services with health checks and start-up ordering. The databases are not exposed to the host. |
-| [.github/workflows/](.github/workflows/) | GitHub Actions | Lint and tests for every component, Terraform validation, and a full-stack Docker smoke test. |
+| [.github/workflows/](.github/workflows/) | GitHub Actions | Lint and tests for every component, Airflow DAG and Terraform validation, a full-stack Docker smoke test, and verification of each production rollout. |
+| [deploy/vm/](deploy/vm/) | systemd, bash, GitHub API | **Pull-based continuous deployment**: the VM deploys `main` once CI passes, health-checks and rolls back on failure. SSH stays locked |
 | [deploy/terraform/](deploy/terraform/) | Terraform / OpenTofu, azurerm | Infrastructure as Code: network, firewall, VM and budget alert, with validations that keep it inside the Azure free tier. |
 | [deploy/azure/](deploy/azure/) | cloud-init, Azure portal | First-boot script that installs Docker and starts the stack, plus a manual portal guide. |
 
@@ -55,7 +56,7 @@ flowchart LR
 | Urban research and policy context | Real neighbourhood indicators (transport access, green space, housing affordability, road safety) at the ABS SA2 geography used in Australian urban research |
 | Java, Python, JavaScript | Ingestor, pipeline and API, and frontend |
 | Web servers and databases: Nginx, PostgreSQL, MongoDB | Nginx reverse proxy. PostgreSQL for fixed-shape relational indicators. MongoDB for variable-shape documents: the dataset catalogue and versioned provenance records, queried with aggregation pipelines |
-| Version control, CI/CD, containerisation | Git workflow ([CONTRIBUTING.md](CONTRIBUTING.md)), PR template, GitHub Actions, multi-stage Dockerfiles |
+| Version control, CI/CD, containerisation | Git workflow ([CONTRIBUTING.md](CONTRIBUTING.md)), PR template, GitHub Actions CI, pull-based continuous deployment with a CI gate and automatic rollback, multi-stage Dockerfiles |
 | Infrastructure as Code | Terraform defines all Azure resources, is checked in CI (`fmt`, `validate`), and has guard rails against non-free resources |
 | Cloud-first, scalable deployments | Configured through environment variables (12-factor style), runs on an Azure VM, and can switch to managed Azure databases by changing only the URLs |
 | Usable, secure, well-governed systems | Data lineage (every dataset version traceable to its source files by checksum), data licences and attribution recorded, documented method and limitations, validation at every boundary, parameterised SQL, constant-time API-key check, non-root containers, CSP headers, ingestion audit log |
@@ -160,7 +161,7 @@ CI also validates the Terraform, starts the full Docker stack, loads the real da
 
 ## Deploying to Azure
 
-The stack runs on one Azure for Students free-tier VM: Standard_B1s with a 64 GiB P6 disk. A cloud-init script installs Docker and starts everything on first boot.
+The stack runs on one Azure for Students free-tier VM (`Standard_B2ats_v2` or `Standard_B1s`, with a 64 GiB P6 disk). A cloud-init script installs Docker and starts everything on first boot. After that, the VM **deploys every green commit on `main` by itself** ([deploy/vm/](deploy/vm/README.md)).
 
 ```powershell
 cd deploy/terraform
@@ -184,6 +185,10 @@ deploy/terraform/ Infrastructure as Code for Azure
 deploy/azure/     cloud-init and manual portal guide
 .github/          CI workflows and PR template
 ```
+
+## Licence
+
+The **code** is released under the [MIT License](LICENSE). The **data** in `data/` is derived from third-party open data and keeps its own licence (CC BY 4.0). See the attribution below and [NOTICE.md](NOTICE.md).
 
 ## Data attribution
 

@@ -69,7 +69,7 @@ To get the generated API key, run `ssh ... "grep API_KEY ~/urbanpulse/.env"`, us
 | Your home IP changed | Edit `ssh_allowed_cidr`, then `terraform apply`. Only the firewall rule changes |
 | See what is deployed | `terraform state list` / `terraform show` |
 | Detect manual changes (drift) | `terraform plan` (should say *No changes*) |
-| Update the app | `ssh ... "cd ~/urbanpulse && git pull && docker compose up -d --build"` |
+| Update the app | Automatic: merge to `main`, and the VM deploys it after CI passes (see [../vm/README.md](../vm/README.md)) |
 | Remove everything | `terraform destroy` |
 
 ## Troubleshooting
@@ -85,5 +85,5 @@ To get the generated API key, run `ssh ... "grep API_KEY ~/urbanpulse/.env"`, us
 
 - **State**: `terraform.tfstate` stays on your machine and is ignored by git. It describes your infrastructure, so don't share it. Teams normally keep state in a remote backend such as Azure Storage with locking. That's left out here because it would use credit.
 - **cloud-init** is shared with the portal route ([../azure/cloud-init.yaml](../azure/cloud-init.yaml)). It only runs on first boot, so Terraform ignores later edits to it. To rebuild with a changed file, run `terraform apply -replace=azurerm_linux_virtual_machine.main`.
-- **GitHub Actions deploy**: SSH is open only to your IP, so the SSH deploy workflow can't reach the VM. Update the app by hand with the command in the table above.
+- **Deployments**: the VM pulls releases itself (pull-based continuous deployment), so SSH can stay locked to your IP. The *Deploy to Azure VM* workflow verifies each rollout. See [../vm/README.md](../vm/README.md).
 - **CI** runs `terraform fmt -check` and `terraform validate` on every push.

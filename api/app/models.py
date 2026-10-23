@@ -144,4 +144,5 @@ class About(BaseModel):
 class Health(BaseModel):
     status: Literal["ok", "degraded"]
     backend: str
+    version: str = Field(description="Git commit the server is running; 'dev' outside a deployment")
     checks: dict[str, bool]
