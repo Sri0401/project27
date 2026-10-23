@@ -72,6 +72,15 @@ To get the generated API key, run `ssh ... "grep API_KEY ~/urbanpulse/.env"`, us
 | Update the app | `ssh ... "cd ~/urbanpulse && git pull && docker compose up -d --build"` |
 | Remove everything | `terraform destroy` |
 
+## Troubleshooting
+
+| Error | Fix |
+|---|---|
+| `SkuNotAvailable ... Capacity Restrictions: Standard_B1s` | Azure has no B1s capacity in that region right now. Switch to the other free size by adding `vm_size = "Standard_B2ats_v2"` to `terraform.tfvars`, then `terraform plan -out tfplan` and `terraform apply tfplan`. Only the VM is created; the network resources already made are kept. This happened in `australiaeast` on 2026-10-23. |
+| `RequestDisallowedByPolicy` | Azure for Students limits which regions you can use. List them with `az policy assignment list --query "[].parameters.listOfAllowedLocations.value" -o json` and set `location` to one of them. |
+| `az login` says "You don't have access to this" | Your university may block some sign-in methods (for example, device code). Run `az config set core.enable_broker_on_windows=false`, then `az login`, to sign in through a normal browser tab. |
+| SSH times out | Your IP has changed. Update `ssh_allowed_cidr` and apply again. |
+
 ## Notes
 
 - **State**: `terraform.tfstate` stays on your machine and is ignored by git. It describes your infrastructure, so don't share it. Teams normally keep state in a remote backend such as Azure Storage with locking. That's left out here because it would use credit.

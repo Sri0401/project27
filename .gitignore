@@ -26,3 +26,5 @@ Thumbs.db
 !*.tfvars.example
 crash.log
 *.tfplan
+tfplan
+plan.txt

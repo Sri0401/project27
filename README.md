@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/Sri0401/project27/actions/workflows/ci.yml/badge.svg)](https://github.com/Sri0401/project27/actions/workflows/ci.yml)
 
+**Live demo:** http://4.196.164.233 · **API docs:** http://4.196.164.233/api/docs
+(Azure free-tier VM in Australia East, provisioned with Terraform. A small personal demo, so it may occasionally be offline.)
+
 UrbanPulse is a small, cloud-ready research data platform built on **real open government data** for **354 Greater Melbourne neighbourhoods** (ABS SA2 areas).
 
 - A **Python** pipeline combines the ABS 2021 Census, ABS boundary and land-use services, the Victorian public transport GTFS feed, and Victorian road crash data from **Kaggle**.
