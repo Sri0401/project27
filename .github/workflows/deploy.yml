@@ -54,6 +54,11 @@ jobs:
       - name: Smoke-test the live site
         run: |
           set -euo pipefail
-          test "$(curl -fsS "$LIVE_URL/api/suburbs?limit=1000" | jq length)" -gt 300
-          curl -fsS "$LIVE_URL/api/provenance" | jq -e '.output.rows > 300'
-          curl -fsS "$LIVE_URL/" | grep -q "Based on ABS data"
+          # Retry briefly, so a container that is still settling doesn't fail the check.
+          get() { curl -fsS --retry 6 --retry-delay 5 --retry-all-errors --max-time 15 "$LIVE_URL$1"; }
+          areas="$(get '/api/suburbs?limit=1000' | jq length)"
+          echo "areas served: $areas"
+          [[ "$areas" =~ ^[0-9]+$ && "$areas" -gt 300 ]] || { echo "::error::expected over 300 areas, got '$areas'"; exit 1; }
+          get /api/provenance | jq -e '.output.rows > 300' >/dev/null || { echo "::error::provenance check failed"; exit 1; }
+          get / | grep -q "Based on ABS data" || { echo "::error::dashboard attribution missing"; exit 1; }
+          echo "::notice::Smoke tests passed"
