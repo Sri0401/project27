@@ -14,6 +14,23 @@ UrbanPulse is a small, cloud-ready research data platform built on **real open g
 
 Everything is free and open source. It runs with one `docker compose up`, is tested in **GitHub Actions**, and its Azure infrastructure is defined in **Terraform**.
 
+## Screenshots
+
+**Dashboard:** areas coloured by liveability score, with filters, a top-10 chart and a sortable table ([live](http://4.196.164.233))
+
+![UrbanPulse dashboard with a map of Greater Melbourne areas coloured by liveability score](docs/images/dashboard.png)
+
+**Data provenance:** every dataset version records its sources, how each was retrieved, the records used and the licence (stored in MongoDB)
+
+![Data provenance panel listing five open-data sources with publisher, retrieval method, records used and licence](docs/images/provenance.png)
+
+**Airflow:** the weekly pipeline DAG (left) and a successful run with all 11 tasks green (right)
+
+<p>
+  <img src="docs/images/airflow-dag.png" alt="Airflow graph of the urbanpulse_dataset DAG: five parallel extract tasks, transforms, build_candidate, quality_checks and publish" width="49%">
+  <img src="docs/images/airflow-run.png" alt="Airflow grid view showing every task of the urbanpulse_dataset run marked as successful" width="49%">
+</p>
+
 ## Architecture
 
 ```mermaid
