@@ -30,10 +30,12 @@ roll_out() {
   git checkout --quiet --detach "$commit"
   set_version "${commit:0:7}"
   docker compose build --quiet
-  docker compose up -d --remove-orphans
-  # Reload the dataset (a cheap snapshot load) and restart the API so it records the new manifest.
+  # Load the dataset first (a cheap snapshot load; starts the databases if needed), then start the
+  # new version. The new APP_VERSION makes Compose recreate the API, which records the manifest on
+  # start-up. So by the time /api/health reports the new version, the release is fully in place.
+  # Reporting the version earlier, then restarting, let the rollout check hit a restarting API.
   docker compose run --rm ingestor
-  docker compose restart api
+  docker compose up -d --remove-orphans
 }
 
 healthy() {

@@ -12,7 +12,7 @@ sequenceDiagram
     loop every 5 minutes
         VM->>GH: new commit on main? did its CI pass?
     end
-    VM->>VM: checkout, rebuild, reload data, restart API
+    VM->>VM: checkout, rebuild, reload data, start new version
     VM->>VM: health check (expects the new version)
     alt healthy
         VM->>VM: keep new version
